@@ -1,0 +1,24 @@
+{
+  "name": "gold-price-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nssuriya/gold-price-bot.git"
+  },
+  "author": "nssuriya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nssuriya/gold-price-bot/issues"
+  },
+  "homepage": "https://github.com/nssuriya/gold-price-bot#readme",
+  "dependencies": {
+    "html-to-json-data": "^1.6.0",
+    "node-telegram-bot-api": "^0.50.0",
+    "request": "^2.88.2"
+  }
+}
