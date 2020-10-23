@@ -53,6 +53,7 @@ let options = {
         { text: '3', callback_data: 'start' },
     ]]}),
     get_gold22:"get_gold22",
+    get_gold22_now:"get_gold22_now",
     register:"register",
     "show_feedback":"show_feedback",
     unregister:"unregister",
@@ -71,7 +72,6 @@ bot.on('callback_query', (callbackQuery) => {
     let nextStep = response[0];
 
     if(options[nextStep] == "get_gold22"){
-        let hours = Object.keys(goldPrice22);
         let price = goldPrice22["currentprice"];
         if(price){
             bot.sendMessage(chatid,messages[nextStep](price))
@@ -81,12 +81,10 @@ bot.on('callback_query', (callbackQuery) => {
             bot.sendMessage(chatid,"Please try after sometime");
             log(2,"PRICENOTFOUND");
         }
-
     }
     else if(options[nextStep] == "register"){
         register(chatid,firstname);
         log(1,chatid,"REQUEST","REGISTER","ADMIN");
-
     }
     else if(options[nextStep] == "unregister"){
         unregister(chatid,firstname);
@@ -94,10 +92,15 @@ bot.on('callback_query', (callbackQuery) => {
     }
     else if(options[nextStep] == "get_gold22_now"){
         bot.sendMessage(chatid,"Please wait we are fetching the live price...");
-        getGoldPrice22.then(function(price){
-            bot.sendMessage(chatid,messages[nextStep](price));
-            log(1,"ADMIN","SENT","CURRENTGOLDPRICE",chatid);
-        });
+        try{
+            getGoldPrice22().then(function(price){
+                bot.sendMessage(chatid,messages[nextStep](price));
+                log(1,"ADMIN","SENT","CURRENTGOLDPRICE",chatid);
+            });
+        }catch(err){
+            console.log(err)
+        }
+
     }
     else if(options[nextStep] == "show_feedback"){
         bot.sendMessage(chatid,messages[nextStep]);
@@ -323,7 +326,7 @@ function getCurrentTime(){
     var min = ISTTime.getMinutes()
     return { hour,min }
 }
-async function getGoldPrice22(){
+function getGoldPrice22(){
     var options = {
         'method': 'GET',
         'url': 'https://www.goodreturns.in/gold-rates/chennai.html',
@@ -341,7 +344,6 @@ async function getGoldPrice22(){
                     page: 'TEST',
                     data: text('#current-price'),
                 });
-    
             resolve(html.data.split("\n")[0])
           });
         }
