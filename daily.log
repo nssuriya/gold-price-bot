@@ -197,3 +197,4 @@ ADMIN|SENT|OPTIONS-bot_help|-482735743|1603461522137
 unhandledRejection|1528|Error: ETELEGRAM: 400 Bad Request: phone number can be requested in private chats only|1603461522300
 -482735743|SENT|undefined|ADMIN|1603461544533
 unhandledRejection|1528|Error: ETELEGRAM: 403 Forbidden: bot was kicked from the group chat|1603461544698
+ADMIN|SENT|GOLDPRICE|717281564|1603466201151

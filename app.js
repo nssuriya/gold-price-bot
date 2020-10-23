@@ -235,90 +235,84 @@ function getSentStatus(){
 // when the server starts
 getSentStatus();
 //Run at the given time 
-let sendGoldPriceTimer = setInterval(function(){
-    let {hour,min} = getCurrentTime();
-    if(hour === 10) {
-        if(min === 29 ||min === 30||min === 31){
-            log(2,"BATCH_MORNING_GOLDPRICE_STARTED");
-            //sending the price to registered users
-            var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
-            for(users in config.registered){
-                if(goldPrice22["currentprice"] && morning.indexOf(users) == -1) {
-                    bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
-                    morning.push(users);
-                } 
-                else {
-                    getGoldPrice22().then(function(price){
-                        goldPrice22["currentprice"] = price;
-                        goldPrice22[hour] = price;
-                        currentHour = hour;
-                    })
+function setSendGoldPriceTimer(){
+
+    let sendGoldPriceTimer = setInterval(function(){
+        let {hour,min} = getCurrentTime();
+        if(hour === 10) {
+            if(min === 29 ||min === 30||min === 31){
+                log(2,"BATCH_MORNING_GOLDPRICE_STARTED");
+                //sending the price to registered users
+                var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+                for(users in config.registered){
+                    if(goldPrice22["currentprice"] && morning.indexOf(users) == -1) {
+                        bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
+                        morning.push(users);
+                    } 
+                    else {
+                        getGoldPrice22().then(function(price){
+                            goldPrice22["currentprice"] = price;
+                            goldPrice22[hour] = price;
+                            currentHour = hour;
+                        })
+                    }
                 }
             }
         }
-    }
-    if(hour === 18) {
-        if(min === 0 ||min === 1||min === 2){
-            //sending the price to registered users
-            var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
-            log(2,"BATCH_EVENING_GOLDPRICE_STARTED");
-            for(users in config.registered){
-                if(goldPrice22["currentprice"] && evening.indexOf(users) == -1) {
-                    bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
-                    evening.push(users);
-                } 
-                else {
-                    getGoldPrice22().then(function(price){
-                        goldPrice22["currentprice"] = price;
-                        goldPrice22[hour] = price;
-                        currentHour = hour;
-                    })
+        if(hour === 18) {
+            if(min === 0 ||min === 1||min === 2){
+                //sending the price to registered users
+                var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+                log(2,"BATCH_EVENING_GOLDPRICE_STARTED");
+                for(users in config.registered){
+                    if(goldPrice22["currentprice"] && evening.indexOf(users) == -1) {
+                        bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
+                        evening.push(users);
+                    } 
+                    else {
+                        getGoldPrice22().then(function(price){
+                            goldPrice22["currentprice"] = price;
+                            goldPrice22[hour] = price;
+                            currentHour = hour;
+                        })
+                    }
                 }
             }
         }
-    }
-    if(hour === 16) {
-        if(min === 57 ||min === 58||min === 59){
-            //sending the price to registered users
-            var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
-            log(2,"BATCH_EVENING_GOLDPRICE_STARTED");
-            for(users in config.registered){
-                if(goldPrice22["currentprice"] && evening.indexOf(users) == -1) {
-                    bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
-                    evening.push(users);
-                } 
-                else {
-                    getGoldPrice22().then(function(price){
-                        goldPrice22["currentprice"] = price;
-                        goldPrice22[hour] = price;
-                        currentHour = hour;
-                    })
-                }
-            }
+        if(currentHour!=hour){
+            getGoldPrice22().then(function(price){
+                goldPrice22["currentprice"] = price;
+                goldPrice22[hour] = price;
+                currentHour = hour;
+            })
         }
-    }
-    if(currentHour!=hour){
-        getGoldPrice22().then(function(price){
-            goldPrice22["currentprice"] = price;
-            goldPrice22[hour] = price;
-            currentHour = hour;
+        if(hour > 23){
+            clearInterval(backupTimer);
+            clearInterval(sendGoldPriceTimer);
+            setSuperTimer();
+        }
+        console.log("sendGoldPriceTimer is running");
+    },20000);
+}
+function setBackupTimer(){
+    let backupTimer = setInterval(function(){
+        console.log("backupTimer is running");
+        serverDownCount = 0;
+        saveSentStatus().then(function(){
+            log(2,"BACKUP_DONE");
+            getSentStatus();
         })
-    }
-    if(hour==0){
-        // resetting the data;
-        log(2,"SERVERRESET@12:00");
+    },(60000*15));
+}
+function setSuperTimer(){
+    let superTimer = setInterval(function(){
+        log(2,"STARTINGSERVER");
+        setBackupTimer();
+        setSendGoldPriceTimer();
         morning=[];
         evening=[];
-    }
-},10000);
-
-let backupTimer = setInterval(function(){
-    serverDownCount = 0;
-    saveSentStatus().then(function(){
-        log(2,"BACKUP_DONE");
-        getSentStatus();
-    })
-},(60000*15));
+    },(60000*60*8));
+}
 
 function getCurrentTime(){
     var currentTime = new Date();
@@ -329,7 +323,6 @@ function getCurrentTime(){
     var min = ISTTime.getMinutes()
     return { hour,min }
 }
-
 async function getGoldPrice22(){
     var options = {
         'method': 'GET',
@@ -382,6 +375,12 @@ bot.on('contact', (msg) => {
 function adminUpdate(message){
     bot.sendMessage(admin,message);
 }
+
+setSendGoldPriceTimer();
+setBackupTimer();
+
+
+
 process.on("uncaughtException", (err) => {
     log(2,"uncaughtException|"+process.pid+"|"+err);
 });
