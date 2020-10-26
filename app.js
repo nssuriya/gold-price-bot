@@ -9,14 +9,14 @@ const token = '1217607695:AAGdFSP365WC3vTgvnPgdEVV-URW3ZBgTCU';
 let admin = 717281564;
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
-
+let adminoptions = ['admin','getdata','resetdata'];
 let goldPrice22 = {};
 let serverDownCount = 0;
 let currentHour;
 let initiate = ['hi','hello','hey'];
 let states = ['get_feedback','get_gold22','get_gold22_now'];
 let usersQuery = {};
-let morning = [],evening = [];
+let morning = [],evening = [],doOnce = 1;
 let messages = {
     start:`Hi...Welcome to Gold Price Bot. Choose a option below ?
     1. Send gold price at 10:30 AM and 6:00 PM Everyday.
@@ -119,7 +119,8 @@ bot.on('message', (msg) => {
     usersQuery[chatid].incorrectMessage = usersQuery[chatid].incorrectMessage || 0;
     let userState = usersQuery[chatid].state;
     //Initiate messages
-    if(usersQuery[chatid].incorrectMessage <= 5 && states.indexOf(userState) == -1){
+    if(usersQuery[chatid].incorrectMessage <= 5 && states.indexOf(userState) == -1 
+    && chatid != admin && adminoptions.indexOf(msg.text) == -1){
         usersQuery[chatid]["state"] = "1";
         bot.sendMessage(chatid, messages.start,{reply_markup:options['start']});
         if(initiate.indexOf(msg.text) == -1){
@@ -133,7 +134,7 @@ bot.on('message', (msg) => {
         usersQuery[chatid]["state"] = "1";
     }
     //wrong query
-    else{
+    else if(chatid != admin){
         usersQuery[chatid].incorrectMessage = usersQuery[chatid].incorrectMessage + 1;
         log(1,chatid,"SENT",msg.text,"ADMIN");
         if (usersQuery[chatid].incorrectMessage >= 10){
@@ -144,6 +145,26 @@ bot.on('message', (msg) => {
             } else {
                 // no reply needed
             }
+        }
+    }
+    else{
+        let config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+        if(msg.text.toLocaleLowerCase() === "admin"){
+            bot.sendMessage(admin, "Hi Admin!");
+        }
+        else if(msg.text.toLocaleLowerCase() === "getdata"){
+            bot.sendMessage(admin,"Morning "+JSON.stringify(config.MORNING));
+            bot.sendMessage(admin,"Evening "+JSON.stringify(config.EVENING));
+            bot.sendMessage(admin,"registered "+JSON.stringify(Object.keys(config.registered)));
+        }
+        else if(msg.text.toLocaleLowerCase() === "resetdata"){
+            bot.sendMessage(admin,"Data Resetted");
+            config.MORNING = [];
+            config.EVENING = [];
+            fs.writeFile("data.json",JSON.stringify(config, null, 2),function(){
+                //do nothing
+            });
+
         }
     }
 });
@@ -161,7 +182,7 @@ bot.on('message', (msg) => {
 function log(option,user,action,data,to){
     let log ='';
     if(option==1)
-    log = user+"|"+action+"|"+data+"|"+to+"|"+Date.now()+"\n";
+    log = user+"|"+action+"|"+data+"|"+to+"|"+new Date().toLocaleString()+"\n";
     else{ // user is the string sent 
         log = user+"|"+Date.now()+"\n";
     }
@@ -243,12 +264,15 @@ function setSendGoldPriceTimer(){
     let sendGoldPriceTimer = setInterval(function(){
         let {hour,min} = getCurrentTime();
         if(hour === 10) {
-            if(min === 29 ||min === 30||min === 31){
+            if(min === 46 ||min === 47||min === 48){
                 log(2,"BATCH_MORNING_GOLDPRICE_STARTED");
                 //sending the price to registered users
                 var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
+                delete config.registered.count;
+                delete config.registered.maxCount;
                 for(users in config.registered){
                     if(goldPrice22["currentprice"] && morning.indexOf(users) == -1) {
+                        log(1,"ADMIN","SENT","GOLDPRICE",users);
                         bot.sendMessage(users,messages["get_gold22"](goldPrice22["currentprice"]));
                         morning.push(users);
                     } 
@@ -260,6 +284,7 @@ function setSendGoldPriceTimer(){
                         })
                     }
                 }
+                console.log(morning);
             }
         }
         if(hour === 18) {
@@ -289,7 +314,8 @@ function setSendGoldPriceTimer(){
                 currentHour = hour;
             })
         }
-        if(hour > 23){
+        if(hour >= 23 && doOnce){
+            doOnce = 0;
             clearInterval(backupTimer);
             clearInterval(sendGoldPriceTimer);
             setSuperTimer();
@@ -308,12 +334,14 @@ function setBackupTimer(){
     },(60000*15));
 }
 function setSuperTimer(){
+    log(2,"SUPERTIMERINITIATED");
     let superTimer = setInterval(function(){
         log(2,"STARTINGSERVER");
         setBackupTimer();
         setSendGoldPriceTimer();
         morning=[];
         evening=[];
+        doOnce = 1;
     },(60000*60*8));
 }
 
