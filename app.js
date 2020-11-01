@@ -16,7 +16,7 @@ let currentHour;
 let initiate = ['hi','hello','hey'];
 let states = ['get_feedback','get_gold22','get_gold22_now'];
 let usersQuery = {};
-let morning = [],evening = [],doOnce = 1;
+let morning = [],evening = [];
 let messages = {
     start:`Hi...Welcome to Gold Price Bot. Choose a option below ?
     1. Send gold price at 10:30 AM and 6:00 PM Everyday.
@@ -114,13 +114,14 @@ bot.on('callback_query', (callbackQuery) => {
 });
 
 bot.on('message', (msg) => {
+    console.log(msg)
     let chatid = msg.chat.id;
     usersQuery[chatid] = usersQuery[chatid] || {};
     usersQuery[chatid].incorrectMessage = usersQuery[chatid].incorrectMessage || 0;
     let userState = usersQuery[chatid].state;
     //Initiate messages
     if(usersQuery[chatid].incorrectMessage <= 5 && states.indexOf(userState) == -1 
-    && chatid != admin && adminoptions.indexOf(msg.text) == -1){
+    && adminoptions.indexOf(msg.text) == -1){
         usersQuery[chatid]["state"] = "1";
         bot.sendMessage(chatid, messages.start,{reply_markup:options['start']});
         if(initiate.indexOf(msg.text) == -1){
@@ -264,7 +265,7 @@ function setSendGoldPriceTimer(){
     let sendGoldPriceTimer = setInterval(function(){
         let {hour,min} = getCurrentTime();
         if(hour === 10) {
-            if(min === 46 ||min === 47||min === 48){
+            if(min === 29 ||min === 30||min === 31){
                 log(2,"BATCH_MORNING_GOLDPRICE_STARTED");
                 //sending the price to registered users
                 var config = JSON.parse(fs.readFileSync('data.json', 'utf8'));
@@ -314,11 +315,12 @@ function setSendGoldPriceTimer(){
                 currentHour = hour;
             })
         }
-        if(hour >= 23 && doOnce){
-            doOnce = 0;
-            clearInterval(backupTimer);
-            clearInterval(sendGoldPriceTimer);
-            setSuperTimer();
+        if(hour >= 23){
+            morning=[];
+            evening=[];
+        }
+        if(hour == 0 && min ==0 ){
+            log(2,"CALL IT A DAY");
         }
         console.log("sendGoldPriceTimer is running");
     },20000);
@@ -332,17 +334,6 @@ function setBackupTimer(){
             getSentStatus();
         })
     },(60000*15));
-}
-function setSuperTimer(){
-    log(2,"SUPERTIMERINITIATED");
-    let superTimer = setInterval(function(){
-        log(2,"STARTINGSERVER");
-        setBackupTimer();
-        setSendGoldPriceTimer();
-        morning=[];
-        evening=[];
-        doOnce = 1;
-    },(60000*60*8));
 }
 
 function getCurrentTime(){
@@ -408,7 +399,6 @@ function adminUpdate(message){
 
 setSendGoldPriceTimer();
 setBackupTimer();
-
 
 
 process.on("uncaughtException", (err) => {
